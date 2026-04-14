@@ -88,9 +88,9 @@ const stlUrl = model.stlFile ? `${baseUrl}parts/${model.slug}/${model.stlFile}` 
         <ul class="files-list">
           {model.files.map((file) => (
             <li>
-                <a href={`${import.meta.env.BASE_URL}parts/${model.slug}/${file}`} download class="download-btn">
-                  Download {file}
-                </a>
+              <a href={`${import.meta.env.BASE_URL}parts/${model.slug}/${file}`} download class="download-btn">
+              Download {file}
+              </a>
             </li>
           ))}
         </ul>
