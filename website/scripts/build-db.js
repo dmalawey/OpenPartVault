@@ -52,23 +52,38 @@ function buildDatabase() {
           fs.mkdirSync(destFolder, { recursive: true });
         }
 
+
         const filesInFolder = fs.readdirSync(folderPath);
         data.files = [];
+        data.stlFiles = []; // Array to hold multiple STLs
 
         for (const file of filesInFolder) {
           const srcFile = path.join(folderPath, file);
           const destFile = path.join(destFolder, file);
           
           if (fs.statSync(srcFile).isFile()) {
-            // Copy file so the website can serve it
             fs.copyFileSync(srcFile, destFile);
-            
-            // Keep track of what files are available
             data.files.push(file);
-            if (file.toLowerCase().endsWith('.stl')) data.stlFile = file;
+            
+            // Check for STL and calculate size
+            if (file.toLowerCase().endsWith('.stl')) {
+              const stats = fs.statSync(srcFile);
+              let sizeStr = '';
+              if (stats.size > 1024 * 1024) {
+                sizeStr = (stats.size / (1024 * 1024)).toFixed(1) + ' MB';
+              } else {
+                sizeStr = (stats.size / 1024).toFixed(0) + ' KB';
+              }
+              
+              data.stlFiles.push({ name: file, size: sizeStr });
+            }
+            
             if (file.toLowerCase() === 'thumbnail.png') data.hasThumbnail = true;
           }
         }
+
+        // Sort the STLs alphabetically by filename
+        data.stlFiles.sort((a, b) => a.name.localeCompare(b.name));
 
         models.push(data);
         console.log(`✅ Processed: ${data.title} (${folder})`);

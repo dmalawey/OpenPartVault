@@ -19,7 +19,22 @@ export async function getStaticPaths() {
     
     if (fs.existsSync(mdPath)) {
       const rawMarkdown = fs.readFileSync(mdPath, 'utf8');
-      descriptionHtml = marked.parse(rawMarkdown);
+      let html = marked.parse(rawMarkdown);
+      
+      // Get the base URL to ensure it works on both local dev and GitHub Pages CI
+      const baseUrl = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL;
+      
+      // Rewrite relative image sources and file links
+      html = html.replace(/(src|href)="([^"]+)"/g, (match, attr, pathStr) => {
+        // Ignore absolute URLs, data URIs, mailto links, and anchor tags
+        if (!pathStr.startsWith('http') && !pathStr.startsWith('data:') && !pathStr.startsWith('/') && !pathStr.startsWith('mailto:') && !pathStr.startsWith('#')) {
+          // Point the link explicitly to the part's public folder
+          return `${attr}="${baseUrl}/parts/${model.slug}/${pathStr}"`;
+        }
+        return match;
+      });
+
+      descriptionHtml = html;
     }
 
     // 3. Pass the model data and rendered markdown as 'props' to the page
@@ -32,11 +47,6 @@ export async function getStaticPaths() {
 
 // Extract the props passed from getStaticPaths
 const { model, descriptionHtml } = Astro.props;
-
-// Use import.meta.env.BASE_URL for the STL link
-const baseUrl = import.meta.env.BASE_URL;
-// Add explicit slash
-const stlUrl = model.stlFile ? `${baseUrl}/parts/${model.slug}/${model.stlFile}` : null;
 ---
 
 <html lang="en">
@@ -75,11 +85,11 @@ const stlUrl = model.stlFile ? `${baseUrl}/parts/${model.slug}/${model.stlFile}`
       </header>
 
       <div class="viewer-container">
-        {stlUrl ? (
-          <StlViewer stlUrl={stlUrl} />
+        {model.stlFiles && model.stlFiles.length > 0 ? (
+          <StlViewer slug={model.slug} stlFiles={model.stlFiles} />
         ) : (
           <div style="padding: 3rem; text-align: center; color: #666;">
-            <p>No STL file available for 3D preview.</p>
+            <p>No STL files available for 3D preview.</p>
           </div>
         )}
       </div>
